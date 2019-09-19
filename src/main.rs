@@ -1,18 +1,11 @@
 extern crate clap;
-
-extern crate reqwest;
-
-#[macro_use]
 extern crate mysql;
-
-use mysql as my;
-
-use indicatif::{ProgressBar, ProgressStyle};
-
-use std::error::Error;
-
+extern crate reqwest;
 use clap::{App, Arg};
+use indicatif::{ProgressBar, ProgressStyle};
+use mysql as my;
 use reqwest::Url;
+use std::error::Error;
 
 fn main() {
     let matches = App::new("dblook")
@@ -29,7 +22,7 @@ fn main() {
         .get_matches();
     let uri = matches.value_of("uri").unwrap();
 
-    match show_tables(uri, true) {
+    match show_tables(uri, false) {
         Ok(_) => println!("YAY"),
         _ => println!("BOO"),
     }
@@ -37,26 +30,24 @@ fn main() {
 
 fn show_tables(dburi: &str, quiet: bool) -> Result<(), Box<Error>> {
     let msg = format!("Getting Tables For: {}", dburi);
-    let bar = progress_bar(quiet, &msg, Some(100));
+    let progress = progress_bar(quiet, &msg, Some(100));
 
     let conn = Url::parse(dburi).unwrap();
-    bar.inc(25);
+    progress.inc(25);
     println!("Got a connection scheme:  {:?}", conn.scheme());
 
     let pool = my::Pool::new(dburi).unwrap();
-    bar.inc(50);
-    match pool
-        // .prep_exec(r"SELECT * FROM `leads` LIMIT 3;", ())
-        .prep_exec(r"SHOW TABLES;", ())
-        .map(|result| {
-            result.map(|x| x.unwrap()).map(|row| {
-                println!("    | TABLE: {:?}", row);
-            })
-        }) {
+    progress.inc(50);
+    match pool.prep_exec(r"SHOW TABLES;", ()).map(|result| {
+        result.map(|x| x.unwrap()).map(|row| {
+            progress.tick();
+            println!("    | TABLE: {:?}", row);
+        })
+    }) {
         Ok(_) => println!("SUCCESS"),
         Err(thing) => println!("{:?}", thing),
     }
-    bar.finish();
+    progress.finish();
 
     Result::Ok(())
 }
