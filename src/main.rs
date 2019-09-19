@@ -1,7 +1,13 @@
 extern crate clap;
+
+extern crate reqwest;
+
 use indicatif::{ProgressBar, ProgressStyle};
 
+use std::error::Error;
+
 use clap::{App, Arg};
+use reqwest::Url;
 
 fn main() {
     let matches = App::new("dblook")
@@ -21,11 +27,17 @@ fn main() {
     let msg = format!("Getting Tables For: {}", uri);
     progress_bar(true, &msg, Some(100));
 
+    match show_tables("mysql://db_user:db_password@localhost/leads", true) {
+        Ok(_) => println!("YAY"),
+        _ => println!("BOO"),
+    }
     println!("Getting Tables For: {}", uri);
 }
 
-fn download(target: &str, quiet: bool) -> Result<(), Box<::std::error::Error>> {
-    let url = parse_url(target)?;
+fn show_tables(dburi: &str, quiet: bool) -> Result<(), Box<Error>> {
+    let conn = Url::parse(dburi)?;
+    println!("{}", conn);
+    Result::Ok(())
 }
 
 fn progress_bar(quiet: bool, msg: &str, length: Option<u64>) -> ProgressBar {
