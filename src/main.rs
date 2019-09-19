@@ -24,19 +24,18 @@ fn main() {
         .get_matches();
     let uri = matches.value_of("uri").unwrap();
 
-    let msg = format!("Getting Tables For: {}", uri);
-    progress_bar(true, &msg, Some(100));
-
-    match show_tables("mysql://db_user:db_password@localhost/leads", true) {
+    match show_tables(uri, true) {
         Ok(_) => println!("YAY"),
         _ => println!("BOO"),
     }
-    println!("Getting Tables For: {}", uri);
 }
 
 fn show_tables(dburi: &str, quiet: bool) -> Result<(), Box<Error>> {
-    let conn = Url::parse(dburi)?;
-    println!("{}", conn);
+    let msg = format!("Getting Tables For: {}", dburi);
+    progress_bar(quiet, &msg, Some(100));
+
+    let conn = Url::parse(dburi).unwrap();
+    println!("Got a connection scheme:  {:?}", conn.scheme());
     Result::Ok(())
 }
 
