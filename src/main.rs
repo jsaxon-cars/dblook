@@ -2,6 +2,11 @@ extern crate clap;
 
 extern crate reqwest;
 
+#[macro_use]
+extern crate mysql;
+
+use mysql as my;
+
 use indicatif::{ProgressBar, ProgressStyle};
 
 use std::error::Error;
@@ -32,10 +37,27 @@ fn main() {
 
 fn show_tables(dburi: &str, quiet: bool) -> Result<(), Box<Error>> {
     let msg = format!("Getting Tables For: {}", dburi);
-    progress_bar(quiet, &msg, Some(100));
+    let bar = progress_bar(quiet, &msg, Some(100));
 
     let conn = Url::parse(dburi).unwrap();
+    bar.inc(25);
     println!("Got a connection scheme:  {:?}", conn.scheme());
+
+    let pool = my::Pool::new(dburi).unwrap();
+    bar.inc(50);
+    match pool
+        // .prep_exec(r"SELECT * FROM `leads` LIMIT 3;", ())
+        .prep_exec(r"SHOW TABLES;", ())
+        .map(|result| {
+            result.map(|x| x.unwrap()).map(|row| {
+                println!("    | TABLE: {:?}", row);
+            })
+        }) {
+        Ok(_) => println!("SUCCESS"),
+        Err(thing) => println!("{:?}", thing),
+    }
+    bar.finish();
+
     Result::Ok(())
 }
 
